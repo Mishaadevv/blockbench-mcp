@@ -1,0 +1,11 @@
+# Extracted third-party Blockbench source, used only as a local API reference.
+.ref/
+
+# Dependencies (the project itself has none, but be safe).
+node_modules/
+
+# Local runtime / debug artifacts.
+connection.json
+*.log
+*.tmp
+test/_*.js

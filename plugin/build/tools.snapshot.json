@@ -1,0 +1,1646 @@
+{
+  "version": "2.0.0",
+  "protocol": 2,
+  "tools": [
+    {
+      "name": "bb_status",
+      "title": "Bridge status",
+      "description": "Report the connection to the MCP server, the Blockbench version, the open project summary and whether file-system permission has been granted. Call this first in a session.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "bb_execute_js",
+      "title": "Execute JavaScript in Blockbench",
+      "description": "Run arbitrary async JavaScript inside Blockbench with full access to every global (Project, Cube, Group, Mesh, Texture, Canvas, Codecs, Formats, Modes, Undo, Outliner, Preview, Menu, Action, BarItems, Plugins, StateMemory, ...) and the Node modules a plugin may use. Use this for anything the structured tools do not cover. The code may use await and must return a value; console output is captured and returned. An `api` argument is injected with helpers: api.find(ref), api.findAll(refs), api.textures(), api.animations(), api.sleep(ms), api.readFile(path), api.writeFile(path,text), api.toBase64(bytes), api.fromBase64(b64), api.toast(text).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "JavaScript source. May use await. The value of the last expression / an explicit return is returned."
+          }
+        },
+        "required": [
+          "code"
+        ]
+      }
+    },
+    {
+      "name": "bb_step",
+      "title": "Run several tools in one request",
+      "description": "Execute a list of tool calls in order inside a single round trip. Each step is {tool, arguments}. Later steps may reference earlier results with \"$N.path\" (N = step index, or -1/\"last\" for the previous step), e.g. \"$0.element.uuid\". Failures are reported per step and do not stop the batch unless stop_on_error is true.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tool": {
+                  "type": "string"
+                },
+                "arguments": {
+                  "type": "object"
+                }
+              },
+              "required": [
+                "tool"
+              ]
+            }
+          },
+          "stop_on_error": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "steps"
+        ]
+      }
+    },
+    {
+      "name": "bb_project_info",
+      "title": "Project overview",
+      "description": "Dump the current project: format, mode, sizes, and optionally the element tree, textures and animations. Call this to re-orient after a large edit.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "elements": {
+            "type": "boolean",
+            "default": true
+          },
+          "textures": {
+            "type": "boolean",
+            "default": true
+          },
+          "animations": {
+            "type": "boolean",
+            "default": true
+          },
+          "geometry": {
+            "type": "boolean",
+            "default": false,
+            "description": "Include mesh vertices and faces (verbose)."
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_set_project",
+      "title": "Edit project metadata",
+      "description": "Change the open project: name, texture resolution, the box_uv default and the view mode. Use it to rename a project or change the texture canvas the model is authored against.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "texture_width": {
+            "type": "integer"
+          },
+          "texture_height": {
+            "type": "integer"
+          },
+          "box_uv": {
+            "type": "boolean"
+          },
+          "view_mode": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_new_project",
+      "title": "New project",
+      "description": "Create a new empty Blockbench project. format is a Blockbench format id (free, java_block, bedrock, bedrock_block, modded_entity, skin, image, ...). Always call this (or bb_open_model) before building, unless a project is already open.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "default": "free"
+          },
+          "name": {
+            "type": "string"
+          },
+          "texture_width": {
+            "type": "integer"
+          },
+          "texture_height": {
+            "type": "integer"
+          },
+          "box_uv": {
+            "type": "boolean"
+          },
+          "create_texture": {
+            "type": "boolean",
+            "default": false,
+            "description": "Also create a blank texture sized texture_width x texture_height."
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_open_model",
+      "title": "Open / import a model file",
+      "description": "Load a model from disk, replacing the current project (or importing into it). Codec inferred from the extension (.bbmodel, .json, .obj, .gltf, .fbx, .stl, .dae, .jem, .jpm), or set with format (ids from bb_status).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "description": "Optional codec id / alias, e.g. java_block, bedrock, project."
+          },
+          "import_to_current": {
+            "type": "boolean",
+            "default": false,
+            "description": "Merge into the open project instead of replacing it."
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "bb_save_project",
+      "title": "Save project (bbmodel)",
+      "description": "Compile the project to .bbmodel and write it to disk. Without a path, the current project path is reused; pass one to save a copy.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "embed_textures": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_export_model",
+      "title": "Export model",
+      "description": "Compile the project into another format and write it to disk. Formats: bbmodel/project, java_block, bedrock, bedrock_old, modded_entity, optifine_entity (jem), optifine_part (jpm), collada (dae), fbx, gltf/glb, obj, stl, skin_model.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "options": {
+            "type": "object",
+            "description": "Codec options, passed to compile()."
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "bb_undo",
+      "title": "Undo",
+      "description": "Undo the last edit (one or more steps).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "steps": {
+            "type": "integer",
+            "default": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_redo",
+      "title": "Redo",
+      "description": "Redo the last undone edit.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "steps": {
+            "type": "integer",
+            "default": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_set_mode",
+      "title": "Switch editor mode",
+      "description": "Switch Blockbench mode: edit, paint, animate, display or pose. Paint/animate are needed for texture and animation tools on some formats.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      }
+    },
+    {
+      "name": "bb_set_view",
+      "title": "Set view mode and camera angle",
+      "description": "Change the viewport view mode (textured, solid, wireframe, normal, uv) and/or move the camera to a preset angle (front, back, left, right, top, bottom, isometric_right, isometric_left, true_isometric_right, true_isometric_left, north, east, south, west, up, down). Useful before bb_screenshot.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "view_mode": {
+            "type": "string"
+          },
+          "angle": {
+            "type": "string"
+          },
+          "zoom": {
+            "type": "number",
+            "description": "Distance factor relative to the preset (0.5 = twice as close)."
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_list_actions",
+      "title": "List toolbar actions",
+      "description": "List runnable Blockbench actions (BarItems) by id and name, optionally filtered.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "default": 60
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_run_action",
+      "title": "Run a toolbar action",
+      "description": "Trigger any Blockbench action by its BarItems id (see bb_list_actions). This reaches every built-in command the UI exposes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "bb_notify",
+      "title": "Notify the user",
+      "description": "Show a toast / quick message inside Blockbench. Use it to tell the human what the agent is doing or to ask them to look at the screen.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string",
+            "default": "link"
+          },
+          "expire": {
+            "type": "integer",
+            "default": 4000
+          }
+        },
+        "required": [
+          "text"
+        ]
+      }
+    },
+    {
+      "name": "bb_screenshot",
+      "title": "Screenshot the viewport",
+      "description": "Render the current preview to a PNG on disk and return the path. This is how an agent looks at its own work. Set crop=true (default) to auto-crop to the model, or crop=false for the full viewport. The transparent viewport is composited over a solid background (override with \"background\", or disable with background:false). Returns a data URL too when include_data_url is true.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Output PNG. Defaults to <temp>/blockbench_mcp_shot_<timestamp>.png"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "crop": {
+            "type": "boolean",
+            "default": true
+          },
+          "background": {
+            "description": "CSS colour to composite over (default #262b33), or false to keep transparency."
+          },
+          "include_data_url": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_review",
+      "title": "Review the model from several angles",
+      "description": "Render the model from several camera angles into one contact-sheet PNG and return its path. Use this to LOOK at your own work and catch proportion and texture problems before declaring a model finished. The agent can then read the image file.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "angles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Default: front, right, back, left, isometric_right, top."
+          },
+          "width": {
+            "type": "integer",
+            "default": 384,
+            "description": "Size of each cell in pixels."
+          },
+          "background": {
+            "type": "string",
+            "default": "#454c57"
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_read_file",
+      "title": "Read a file",
+      "description": "Read a file from disk. encoding \"auto\" (default) returns text for text files and base64 for binary; force it with \"text\" or \"base64\". Reading uses Blockbench's own file layer and needs no plugin permission.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "encoding": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "text",
+              "base64"
+            ]
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "bb_write_file",
+      "title": "Write a file",
+      "description": "Write text or base64-decoded bytes to a file, creating parent directories is the caller's job. Uses Blockbench's file layer (no permission prompt).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "encoding": {
+            "type": "string",
+            "enum": [
+              "text",
+              "base64"
+            ],
+            "default": "text"
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ]
+      }
+    },
+    {
+      "name": "bb_list_dir",
+      "title": "List a directory",
+      "description": "List the entries of a directory. Needs the plugin file-system permission (the user is asked once; bb_request_fs can trigger the prompt explicitly). Supports recursion and a glob filter.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "recursive": {
+            "type": "boolean",
+            "default": false
+          },
+          "filter": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "default": 500
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "bb_glob",
+      "title": "Find files by glob",
+      "description": "Recursively find files under a directory matching a glob such as \"**/*.json\" or \"*.png\". Needs file-system permission.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "pattern": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "default": 200
+          }
+        },
+        "required": [
+          "path",
+          "pattern"
+        ]
+      }
+    },
+    {
+      "name": "bb_file_info",
+      "title": "File info",
+      "description": "Stat a path: exists, type, size, modified time. Needs file-system permission.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "bb_mkdir",
+      "title": "Create a directory",
+      "description": "Create a directory (recursively by default). Needs file-system permission.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "recursive": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "bb_delete_path",
+      "title": "Delete a file or directory",
+      "description": "Delete a file, or a directory when recursive is true. Needs file-system permission.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "recursive": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "bb_request_fs",
+      "title": "Request file-system permission",
+      "description": "Ask the user for the plugin file-system permission (needed only by bb_list_dir, bb_glob, bb_file_info, bb_mkdir, bb_delete_path; reads and writes work without it). An optional scope limits the permission to one directory.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "description": "Optional directory to limit access to."
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_list_elements",
+      "title": "List elements",
+      "description": "List outliner elements with their ids, transforms and (optionally) geometry. Filter by type or parent.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "cube, mesh, group, locator, null_object, bounding_box, texture_mesh, armature, armature_bone"
+          },
+          "parent": {
+            "type": "string"
+          },
+          "include_geometry": {
+            "type": "boolean",
+            "default": false
+          },
+          "include_faces": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_add_cube",
+      "title": "Add a cube",
+      "description": "Create a cube element. Provide from+to, or from+size (Blockbench cubes use from/to where to is the exclusive upper bound). origin defaults to from. Optionally assign a texture to all faces, set per-face uv, and enable auto UV.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "from": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "to": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "size": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "origin": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "rotation": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "inflate": {
+            "type": "number"
+          },
+          "box_uv": {
+            "type": "boolean"
+          },
+          "autouv": {
+            "type": "integer",
+            "description": "0 off, 1 auto per face, 2 relative"
+          },
+          "uv_offset": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "texture": {
+            "type": "string",
+            "description": "Texture name/uuid to assign to every face."
+          },
+          "faces": {
+            "type": "object",
+            "description": "Per-face overrides: {north:{uv:[x1,y1,x2,y2], texture, enabled, rotation, tint}, ...}"
+          },
+          "parent": {
+            "type": "string"
+          },
+          "color": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_add_group",
+      "title": "Add a group",
+      "description": "Create an empty group (bone) to hold elements or drive animation. Position it with origin.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "rotation": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "parent": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_add_mesh",
+      "title": "Add a mesh",
+      "description": "Create a free-form mesh. vertices is a list of [x,y,z] (or a {key:[x,y,z]} map). faces is a list where each face is either [i0,i1,i2] indices into vertices, or {vertices:[i..], uv:[[u,v]..], texture}. UVs are stored per vertex.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "vertices": {},
+          "faces": {},
+          "origin": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "rotation": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "texture": {
+            "type": "string"
+          },
+          "parent": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "vertices",
+          "faces"
+        ]
+      }
+    },
+    {
+      "name": "bb_edit_mesh",
+      "title": "Edit a mesh",
+      "description": "Modify an existing mesh in place. With vertices+faces it redefines the geometry; with merge:true the new vertices/faces are appended. delete_faces / delete_vertices remove by key. Keys are shown by bb_list_elements {include_geometry:true}.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {},
+          "vertices": {
+            "description": "Array of [x,y,z], or a {key:[x,y,z]} map."
+          },
+          "faces": {
+            "description": "Array of indices / {vertices,uv,texture}, or a {key:{...}} map."
+          },
+          "merge": {
+            "type": "boolean",
+            "default": false
+          },
+          "delete_faces": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "delete_vertices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "target"
+        ]
+      }
+    },
+    {
+      "name": "bb_add_element",
+      "title": "Add a special element",
+      "description": "Create a locator, null_object, bounding_box, texture_mesh, armature or armature_bone. Pass its properties directly.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "object"
+          },
+          "parent": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      }
+    },
+    {
+      "name": "bb_set_element",
+      "title": "Edit element properties",
+      "description": "Change properties of one or more elements: name, origin, rotation, from/to/size (cubes), position (locators), inflate, visibility, export, locked, box_uv, autouv, shade, mirror_uv, uv_offset, color, and per-face overrides via faces:{north:{uv,texture,enabled,tint,rotation}}. Renaming more than one element at once is refused.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {},
+          "properties": {
+            "type": "object"
+          },
+          "apply_to_children": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "targets",
+          "properties"
+        ]
+      }
+    },
+    {
+      "name": "bb_transform_elements",
+      "title": "Transform elements",
+      "description": "Move, rotate or scale elements. Use vector [x,y,z], or axis+amount. Move translates from/to/origin (cubes) or origin/position (others). Rotate adds degrees around the element origin. Scale multiplies size about the element origin (cubes, meshes, texture_mesh).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {},
+          "operation": {
+            "type": "string",
+            "enum": [
+              "move",
+              "rotate",
+              "scale"
+            ]
+          },
+          "vector": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "For move/scale: [x,y,z] (scale is a factor). For rotate: degrees per axis."
+          },
+          "axis": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "origin": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Optional pivot for scale (defaults to each element origin)."
+          }
+        },
+        "required": [
+          "targets",
+          "operation"
+        ]
+      }
+    },
+    {
+      "name": "bb_duplicate_elements",
+      "title": "Duplicate elements",
+      "description": "Copy elements (groups copy their children too). Optionally repeat and offset each copy.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {},
+          "count": {
+            "type": "integer",
+            "default": 1
+          },
+          "vector": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "axis": {
+            "type": "string"
+          },
+          "offset": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "targets"
+        ]
+      }
+    },
+    {
+      "name": "bb_array_elements",
+      "title": "Array elements",
+      "description": "Create repeated copies of elements along a grid — the correct way to build rows of windows, treads, spokes and so on instead of placing copies by hand. names may contain {i} and starts at 1.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {},
+          "count": {
+            "type": "integer",
+            "default": 3,
+            "description": "Number of copies to create."
+          },
+          "vector": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "axis": {
+            "type": "string"
+          },
+          "offset": {
+            "type": "number",
+            "description": "Spacing along axis."
+          },
+          "names": {
+            "type": "string",
+            "description": "Name template, e.g. \"step_{i}\"."
+          },
+          "select_originals": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "targets"
+        ]
+      }
+    },
+    {
+      "name": "bb_mirror_elements",
+      "title": "Mirror elements",
+      "description": "Reflect elements across an axis-aligned plane (default x=0). copy=true duplicates first, which is the usual way to build a symmetrical half. Meshes keep correct winding.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {},
+          "axis": {
+            "type": "string",
+            "default": "x"
+          },
+          "plane": {
+            "type": "number",
+            "default": 0
+          },
+          "copy": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "targets"
+        ]
+      }
+    },
+    {
+      "name": "bb_reparent_elements",
+      "title": "Reparent elements",
+      "description": "Move elements under a new parent group (or \"root\").",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {},
+          "parent": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "targets",
+          "parent"
+        ]
+      }
+    },
+    {
+      "name": "bb_delete_elements",
+      "title": "Delete elements",
+      "description": "Delete elements (groups delete their children).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {}
+        },
+        "required": [
+          "targets"
+        ]
+      }
+    },
+    {
+      "name": "bb_select_elements",
+      "title": "Select elements",
+      "description": "Change the outliner selection. mode: replace (default), add, remove, toggle, none.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {},
+          "mode": {
+            "type": "string",
+            "default": "replace"
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_group_elements",
+      "title": "Group elements",
+      "description": "Create a new group around the given elements, positioned at their centre, and move the elements into it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {},
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "targets"
+        ]
+      }
+    },
+    {
+      "name": "bb_set_face_texture",
+      "title": "Assign a texture to faces",
+      "description": "Assign a texture (by name/uuid) to cube or mesh faces, or clear it with null. For cubes, pass faces to limit which sides are changed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {},
+          "texture": {
+            "description": "Texture name/uuid, or null to clear."
+          },
+          "faces": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "targets",
+          "texture"
+        ]
+      }
+    },
+    {
+      "name": "bb_set_face_uv",
+      "title": "Set face UVs",
+      "description": "Set UVs on one face. For cubes give uv=[x1,y1,x2,y2] in texture pixels. For meshes give uvs aligned to the face vertices, or a {vertex_key:[u,v]} map.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string"
+          },
+          "face": {
+            "type": "string",
+            "description": "Cube face name, or mesh face key (use bb_list_elements include_geometry:true)."
+          },
+          "uv": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "uvs": {}
+        },
+        "required": [
+          "target",
+          "face"
+        ]
+      }
+    },
+    {
+      "name": "bb_auto_uv",
+      "title": "Regenerate UVs",
+      "description": "Set automatic UV mode on cubes: mode \"faces\" (autouv 1, per-face), \"relative\" (autouv 2), \"box\" (box_uv), or \"off\".",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {},
+          "mode": {
+            "type": "string",
+            "default": "faces"
+          }
+        },
+        "required": [
+          "targets"
+        ]
+      }
+    },
+    {
+      "name": "bb_validate",
+      "title": "Validate the model",
+      "description": "Run a static audit of the project and return a score plus findings: empty project, zero-size or degenerate cubes, meshes with too few vertices, untextured faces, UVs outside the texture, duplicate cubes, and out-of-bounds UVs. Fix and re-run before declaring a model finished.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "bb_list_textures",
+      "title": "List textures",
+      "description": "List the project textures with size, UV resolution, layers and saved state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "include_data_url": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_create_texture",
+      "title": "Create a texture",
+      "description": "Create a blank texture, optionally filled with a colour. Size defaults to the project texture resolution.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "fill": {
+            "type": "string"
+          },
+          "select": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_generate_texture",
+      "title": "Generate a procedural texture",
+      "description": "Paint a new texture from a preset and/or an ordered list of ops. Deterministic for a given seed. Presets: wood, planks, stone, cobble, metal, dirt, grass, leaves, bricks, fabric, skin, gem, noise, gradient. Ops: fill, noise, cells, gradient, radial, rect, circle, ellipse, line, checker, stripes, border, vignette, scatter, pixel, pixels, text, adjust, replace, blend. Example: {preset:\"wood\"} or {ops:[{op:\"fill\",color:\"#2b3a55\"},{op:\"noise\",color:\"#101820\",color2:\"#8fb8de\",scale:2,octaves:4},{op:\"vignette\",strength:0.5}]}.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "seed": {
+            "type": "integer",
+            "default": 1
+          },
+          "preset": {
+            "type": "string",
+            "description": "A named material preset; user ops run on top of it."
+          },
+          "ops": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "select": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_data_url": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_draw_texture",
+      "title": "Draw on an existing texture",
+      "description": "Apply a list of ops onto an existing texture (adds to what is already there). Same ops as bb_generate_texture.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string"
+          },
+          "ops": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "seed": {
+            "type": "integer",
+            "default": 1
+          }
+        },
+        "required": [
+          "target",
+          "ops"
+        ]
+      }
+    },
+    {
+      "name": "bb_paint_pixels",
+      "title": "Paint pixels",
+      "description": "Set individual pixels on a texture — the precise way to hand-draw pixel art. pixels is a list of [x, y, color] with color \"#rrggbb\" or [r,g,b] or [r,g,b,a].",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string"
+          },
+          "pixels": {
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          }
+        },
+        "required": [
+          "target",
+          "pixels"
+        ]
+      }
+    },
+    {
+      "name": "bb_get_texture_pixel",
+      "title": "Read texture pixels",
+      "description": "Read a rectangle of pixels from a texture. Use this to verify what was drawn: it returns rows of [r,g,b,a].",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {},
+          "x": {
+            "type": "integer",
+            "default": 0
+          },
+          "y": {
+            "type": "integer",
+            "default": 0
+          },
+          "w": {
+            "type": "integer",
+            "default": 1
+          },
+          "h": {
+            "type": "integer",
+            "default": 1
+          }
+        },
+        "required": [
+          "targets"
+        ]
+      }
+    },
+    {
+      "name": "bb_import_texture",
+      "title": "Import a texture",
+      "description": "Load an image from disk or a data URL as a project texture.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "data_url": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_export_texture",
+      "title": "Export texture(s) to PNG",
+      "description": "Write texture PNGs to disk. Give a single target + path, or several targets + a directory.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {},
+          "path": {
+            "type": "string"
+          },
+          "dir": {
+            "type": "string"
+          },
+          "include_data_url": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_set_texture_properties",
+      "title": "Edit texture properties",
+      "description": "Change texture metadata: name, folder, render_mode, pbr_channel, particle, fps, layers_enabled, saved.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {},
+          "name": {
+            "type": "string"
+          },
+          "folder": {
+            "type": "string"
+          },
+          "render_mode": {
+            "type": "string"
+          },
+          "pbr_channel": {
+            "type": "string"
+          },
+          "particle": {
+            "type": "boolean"
+          },
+          "fps": {
+            "type": "number"
+          },
+          "layers_enabled": {
+            "type": "boolean"
+          },
+          "keep_size": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "targets"
+        ]
+      }
+    },
+    {
+      "name": "bb_resize_texture",
+      "title": "Resize a texture",
+      "description": "Resize the texture image (nearest neighbour). uv_width/uv_height follow the new size unless keep_uv is true.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "keep_uv": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "target",
+          "width",
+          "height"
+        ]
+      }
+    },
+    {
+      "name": "bb_delete_texture",
+      "title": "Delete texture(s)",
+      "description": "Remove textures from the project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {}
+        },
+        "required": [
+          "targets"
+        ]
+      }
+    },
+    {
+      "name": "bb_list_animations",
+      "title": "List animations",
+      "description": "List the project animations with loop mode, length and per-bone keyframe counts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "bb_create_animation",
+      "title": "Create an animation",
+      "description": "Create a new animation. loop is \"once\", \"loop\" or \"hold\"; length is in seconds.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "loop": {
+            "type": "string",
+            "default": "once"
+          },
+          "length": {
+            "type": "number",
+            "default": 1
+          },
+          "select": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_set_animation",
+      "title": "Edit an animation",
+      "description": "Change name, loop mode or length of an animation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "animation": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "loop": {
+            "type": "string"
+          },
+          "length": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_delete_animation",
+      "title": "Delete an animation",
+      "description": "Remove an animation from the project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "animation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "animation"
+        ]
+      }
+    },
+    {
+      "name": "bb_add_keyframe",
+      "title": "Add a keyframe",
+      "description": "Add a keyframe for a bone on rotation/position/scale. x/y/z are Molang expressions (default \"0\"), or plain numbers. The bone is referenced by group name or uuid.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "animation": {
+            "type": "string"
+          },
+          "bone": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "rotation",
+              "position",
+              "scale"
+            ]
+          },
+          "time": {
+            "type": "number"
+          },
+          "x": {},
+          "y": {},
+          "z": {},
+          "interpolation": {
+            "type": "string",
+            "default": "linear"
+          }
+        },
+        "required": [
+          "bone",
+          "time"
+        ]
+      }
+    },
+    {
+      "name": "bb_delete_keyframe",
+      "title": "Delete a keyframe",
+      "description": "Delete a keyframe by uuid, or the one nearest to a given time on a bone/channel.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "animation": {
+            "type": "string"
+          },
+          "bone": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string",
+            "default": "rotation"
+          },
+          "time": {
+            "type": "number"
+          },
+          "uuid": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bone"
+        ]
+      }
+    },
+    {
+      "name": "bb_play_animation",
+      "title": "Timeline playback",
+      "description": "Control the animation timeline: set the time, play, pause or stop.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "animation": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "default": "set_time"
+          },
+          "time": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_list_plugins",
+      "title": "List plugins",
+      "description": "List every Blockbench plugin that is present, with id, version, source, install state and whether it can be reloaded.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "bb_install_plugin",
+      "title": "Install a plugin",
+      "description": "Install a Blockbench plugin from source code, a local file, or a URL. The code is written to the plugins folder, recorded so it loads on startup, and loaded immediately. Executes third-party code inside Blockbench.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Full plugin JavaScript source."
+          },
+          "path": {
+            "type": "string",
+            "description": "Local .js file to install."
+          },
+          "url": {
+            "type": "string",
+            "description": "URL of a .js plugin file."
+          },
+          "id": {
+            "type": "string",
+            "description": "Plugin id (required unless it can be read from the code)."
+          },
+          "version": {
+            "type": "string",
+            "default": "1.0.0"
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_uninstall_plugin",
+      "title": "Uninstall a plugin",
+      "description": "Uninstall a Blockbench plugin by id and optionally delete its file.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "delete_file": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "bb_reload_plugin",
+      "title": "Reload a plugin",
+      "description": "Reload a dev/URL plugin without restarting Blockbench. Store plugins are not reloadable in place.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "bb_list_settings",
+      "title": "List Blockbench settings",
+      "description": "List user settings by id with their current values. Handy before bb_set_setting. filter matches the id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "default": 80
+          }
+        }
+      }
+    },
+    {
+      "name": "bb_set_setting",
+      "title": "Change a setting",
+      "description": "Set a Blockbench user setting by id (e.g. viewport_zoom_speed, default_cube_size, shading).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "value": {}
+        },
+        "required": [
+          "id",
+          "value"
+        ]
+      }
+    }
+  ]
+}

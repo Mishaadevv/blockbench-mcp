@@ -1,0 +1,34 @@
+{
+  "name": "blockbench-mcp",
+  "version": "2.0.0",
+  "description": "MCP server that gives an AI agent full control of Blockbench: modeling, procedural textures, UV, animation, codecs, plugins, files and export. Zero dependencies.",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "bin": {
+    "blockbench-mcp": "src/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node plugin/build.js",
+    "install-plugin": "node install.js --plugin",
+    "register": "node install.js --register",
+    "start": "node src/index.js",
+    "test": "node test/offline.js",
+    "test:ws": "node test/ws.js",
+    "test:live": "node test/live.js"
+  },
+  "keywords": [
+    "mcp",
+    "blockbench",
+    "minecraft",
+    "3d",
+    "modeling",
+    "texture",
+    "animation",
+    "ai",
+    "agent"
+  ],
+  "license": "MIT"
+}
